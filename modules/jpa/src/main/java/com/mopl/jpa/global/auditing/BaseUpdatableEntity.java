@@ -3,23 +3,20 @@ package com.mopl.jpa.global.auditing;
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
+import lombok.AccessLevel;
 import lombok.Getter;
-import org.springframework.data.annotation.CreatedDate;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @MappedSuperclass
-@EntityListeners(AuditingEntityListener.class)
-public abstract class BaseTimeEntity extends BaseIdEntity{
-
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+public abstract class BaseUpdatableEntity extends BaseDeletableEntity {
 
     @LastModifiedDate
     @Column(nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 }
