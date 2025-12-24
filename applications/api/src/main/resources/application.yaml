@@ -1,0 +1,23 @@
+server:
+  shutdown: graceful
+
+spring:
+  main:
+    web-application-type: servlet
+  application:
+    name: mopl-api
+  profiles:
+    active: local
+  config:
+    import:
+      - jpa.yaml
+  threads:
+    virtual:
+      enabled: true
+
+springdoc:
+  use-fqn: true
+  api-docs:
+    path: /api/docs
+  swagger-ui:
+    path: /swagger-ui.html

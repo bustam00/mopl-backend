@@ -1,11 +1,16 @@
 rootProject.name = "mopl-backend"
 
 include(
-    "app:api",
-    "app:batch",
-    "modules:jpa",
-    "modules:redis",
-    "modules:kafka",
-    "modules:external",
-    "supports:monitoring",
+    ":applications:api",
+    // ":applications:chat",
+    // ":applications:batch",
+    // ":applications:streamer",
+    ":cores:domain",
+    ":modules:jpa",
+    // ":modules:redis",
+    // ":modules:kafka",
+    // ":modules:external",
+    ":supports:jackson",
+    // ":supports:logging",
+    // ":supports:monitoring",
 )
