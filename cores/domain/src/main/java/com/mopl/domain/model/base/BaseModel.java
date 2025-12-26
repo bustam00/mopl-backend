@@ -1,32 +1,21 @@
 package com.mopl.domain.model.base;
 
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.time.Instant;
 import java.util.UUID;
 
 @Getter
+@SuperBuilder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class BaseModel {
 
-    private final UUID id;
-    private final Instant createdAt;
+    private UUID id;
+    private Instant createdAt;
     private Instant deletedAt;
-
-    protected BaseModel() {
-        this.id = null;
-        this.createdAt = null;
-        this.deletedAt = null;
-    }
-
-    protected BaseModel(
-        UUID id,
-        Instant createdAt,
-        Instant deletedAt
-    ) {
-        this.id = id;
-        this.createdAt = createdAt;
-        this.deletedAt = deletedAt;
-    }
 
     public void delete() {
         if (!isDeleted()) {

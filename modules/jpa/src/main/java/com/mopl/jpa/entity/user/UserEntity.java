@@ -12,23 +12,24 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
-import java.time.Instant;
-import java.util.UUID;
-
+import static com.mopl.domain.model.user.UserModel.AUTH_PROVIDER_MAX_LENGTH;
 import static com.mopl.domain.model.user.UserModel.EMAIL_MAX_LENGTH;
 import static com.mopl.domain.model.user.UserModel.ENCODED_PASSWORD_MAX_LENGTH;
 import static com.mopl.domain.model.user.UserModel.NAME_MAX_LENGTH;
 import static com.mopl.domain.model.user.UserModel.PROFILE_IMAGE_URL_MAX_LENGTH;
+import static com.mopl.domain.model.user.UserModel.ROLE_MAX_LENGTH;
 
 @Entity
 @Table(name = "users")
 @Getter
+@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserEntity extends BaseUpdatableEntity {
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = AUTH_PROVIDER_MAX_LENGTH)
     private AuthProvider authProvider;
 
     @Column(nullable = false, unique = true, length = EMAIL_MAX_LENGTH)
@@ -44,64 +45,41 @@ public class UserEntity extends BaseUpdatableEntity {
     private String profileImageUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = ROLE_MAX_LENGTH)
     private Role role;
 
     @Column(nullable = false)
     private boolean locked;
 
-    public UserEntity(
-        UUID id,
-        Instant createdAt,
-        Instant deletedAt,
-        Instant updatedAt,
-        AuthProvider authProvider,
-        String email,
-        String name,
-        String password,
-        String profileImageUrl,
-        Role role,
-        boolean locked
-    ) {
-        super(id, createdAt, updatedAt, deletedAt);
-        this.authProvider = authProvider;
-        this.email = email;
-        this.name = name;
-        this.password = password;
-        this.profileImageUrl = profileImageUrl;
-        this.role = role;
-        this.locked = locked;
-    }
-
     public static UserEntity from(UserModel userModel) {
-        return new UserEntity(
-            userModel.getId(),
-            userModel.getCreatedAt(),
-            userModel.getDeletedAt(),
-            userModel.getUpdatedAt(),
-            userModel.getAuthProvider(),
-            userModel.getEmail(),
-            userModel.getName(),
-            userModel.getPassword(),
-            userModel.getProfileImageUrl(),
-            userModel.getRole(),
-            userModel.isLocked()
-        );
+        return UserEntity.builder()
+            .id(userModel.getId())
+            .createdAt(userModel.getCreatedAt())
+            .deletedAt(userModel.getDeletedAt())
+            .updatedAt(userModel.getUpdatedAt())
+            .authProvider(userModel.getAuthProvider())
+            .email(userModel.getEmail())
+            .name(userModel.getName())
+            .password(userModel.getPassword())
+            .profileImageUrl(userModel.getProfileImageUrl())
+            .role(userModel.getRole())
+            .locked(userModel.isLocked())
+            .build();
     }
 
     public UserModel toModel() {
-        return new UserModel(
-            getId(),
-            getCreatedAt(),
-            getUpdatedAt(),
-            getDeletedAt(),
-            authProvider,
-            email,
-            name,
-            password,
-            profileImageUrl,
-            role,
-            locked
-        );
+        return UserModel.builder()
+            .id(getId())
+            .createdAt(getCreatedAt())
+            .deletedAt(getDeletedAt())
+            .updatedAt(getUpdatedAt())
+            .authProvider(authProvider)
+            .email(email)
+            .name(name)
+            .password(password)
+            .profileImageUrl(profileImageUrl)
+            .role(role)
+            .locked(locked)
+            .build();
     }
 }
