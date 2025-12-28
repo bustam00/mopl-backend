@@ -83,7 +83,7 @@ subprojects {
             classDirectories.setFrom(
                 files(
                     classDirectories.files.map {
-                        fileTree(it)
+                        fileTree(it).exclude("**/entity/**/Q*.class")
                     },
                 ),
             )
@@ -110,3 +110,40 @@ project("applications") { tasks.configureEach { enabled = false } }
 project("cores") { tasks.configureEach { enabled = false } }
 project("modules") { tasks.configureEach { enabled = false } }
 project("supports") { tasks.configureEach { enabled = false } }
+
+tasks.named<JacocoReport>("jacocoTestReport") {
+    description = "Generates an aggregate JaCoCo report from all subprojects"
+
+    dependsOn(subprojects.mapNotNull { it.tasks.findByName("jacocoTestReport") })
+
+    executionData.setFrom(
+        files(subprojects.flatMap { subproject ->
+            subproject.layout.buildDirectory.asFile.get()
+                .resolve("jacoco")
+                .listFiles()
+                ?.filter { it.extension == "exec" }
+                ?: emptyList()
+        })
+    )
+
+    sourceDirectories.setFrom(
+        files(subprojects.flatMap { subproject ->
+            subproject.the<SourceSetContainer>()["main"].allSource.srcDirs
+        })
+    )
+
+    classDirectories.setFrom(
+        files(subprojects.flatMap { subproject ->
+            subproject.the<SourceSetContainer>()["main"].output.classesDirs.map {
+                fileTree(it).exclude("**/entity/**/Q*.class")
+            }
+        })
+    )
+
+    reports {
+        xml.required = true
+        html.required = true
+        html.outputLocation = layout.buildDirectory.dir("reports/jacoco/aggregate/html")
+        xml.outputLocation = layout.buildDirectory.file("reports/jacoco/aggregate/jacocoTestReport.xml")
+    }
+}
