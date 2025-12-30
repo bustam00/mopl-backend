@@ -12,4 +12,8 @@ public class DomainServiceConfig {
     public UserService userService(UserRepository userRepository) {
         return new UserService(userRepository);
     }
+
+
+
+
 }
