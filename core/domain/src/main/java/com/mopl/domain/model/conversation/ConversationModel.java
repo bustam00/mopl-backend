@@ -5,8 +5,6 @@ import com.mopl.domain.exception.content.InvalidContentDataException;
 import com.mopl.domain.exception.user.InvalidUserDataException;
 import com.mopl.domain.model.base.BaseModel;
 import com.mopl.domain.model.base.BaseUpdatableModel;
-import com.mopl.domain.model.user.AuthProvider;
-import com.mopl.domain.model.user.Role;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.Getter;

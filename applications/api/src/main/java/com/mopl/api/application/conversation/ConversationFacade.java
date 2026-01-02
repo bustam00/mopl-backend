@@ -3,7 +3,6 @@ package com.mopl.api.application.conversation;
 import com.mopl.api.interfaces.api.conversation.ConversationCreateRequest;
 import com.mopl.api.interfaces.api.user.UserCreateRequest;
 import com.mopl.domain.model.conversation.ConversationModel;
-import com.mopl.domain.model.user.AuthProvider;
 import com.mopl.domain.model.user.UserModel;
 import com.mopl.domain.service.user.UserService;
 import java.util.Locale;
