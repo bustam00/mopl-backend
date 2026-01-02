@@ -2,10 +2,7 @@ package com.mopl.domain.service.conversation;
 
 import com.mopl.domain.model.conversation.ConversationModel;
 import com.mopl.domain.repository.conversation.ConversationRepository;
-import com.mopl.domain.repository.conversation.DirectMessageRepository;
-import com.mopl.domain.repository.user.UserRepository;
 import lombok.RequiredArgsConstructor;
-
 
 @RequiredArgsConstructor
 public class ConversationService {

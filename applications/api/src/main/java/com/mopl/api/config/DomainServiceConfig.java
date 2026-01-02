@@ -3,7 +3,6 @@ package com.mopl.api.config;
 import com.mopl.domain.repository.content.ContentRepository;
 import com.mopl.domain.repository.content.ContentTagRepository;
 import com.mopl.domain.repository.conversation.ConversationRepository;
-import com.mopl.domain.repository.conversation.DirectMessageRepository;
 import com.mopl.domain.repository.review.ReviewRepository;
 import com.mopl.domain.repository.tag.TagRepository;
 import com.mopl.domain.service.content.ContentService;
@@ -58,7 +57,7 @@ public class DomainServiceConfig {
 //    private UserRepository userRepository;
     @Bean
     public ConversationService conversationService(
-            ConversationRepository conversationRepository
+        ConversationRepository conversationRepository
     ) {
         return new ConversationService(conversationRepository);
     }
