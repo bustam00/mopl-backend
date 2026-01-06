@@ -43,6 +43,7 @@ out/
 .eclipse/
 
 .claude
+.mopl
 
 ###############################
 #        Java / Spring
@@ -55,6 +56,9 @@ bin/
 **/logs/
 *.log
 *.hprof
+
+# QueryDSL generated Q classes
+**/generated/
 
 # Gradle
 .gradle/

@@ -16,11 +16,13 @@ public class SecurityRegistryImpl implements SecurityRegistry {
         AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth) {
         auth
             .requestMatchers(new AntPathRequestMatcher("/h2-console/**")).permitAll()
+            .requestMatchers(new AntPathRequestMatcher("/api/v1/files/display")).permitAll()
             .requestMatchers(HttpMethod.GET, "/api/auth/csrf-token").permitAll()
             .requestMatchers(HttpMethod.POST,
                 "/api/users",
                 "/api/auth/sign-in",
-                "/api/auth/reset-password"
+                "/api/auth/reset-password",
+                "/api/auth/refresh"
             ).permitAll()
             .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
             .requestMatchers(new NegatedRequestMatcher(

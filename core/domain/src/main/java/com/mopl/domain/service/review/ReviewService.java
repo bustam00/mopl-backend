@@ -39,12 +39,32 @@ public class ReviewService {
         UUID authorId = reviewModel.getAuthorId();
 
         // 이건 비즈니스 검증로직이라 Service로 옮김
-        if (authorId == null || requesterId == null || !authorId.equals(requesterId)) {
+        if (authorId == null || !authorId.equals(requesterId)) {
             throw new ReviewForbiddenException(reviewId, requesterId, authorId);
         }
 
         reviewModel.update(text, reting);
 
         return reviewRepository.save(reviewModel);
+    }
+
+    public void delete(
+        UUID reviewId,
+        UUID requesterId
+    ) {
+        ReviewModel review = reviewRepository.findById(reviewId)
+            .orElseThrow(() -> new ReviewNotFoundException(reviewId));
+
+        if (!review.getAuthorId().equals(requesterId)) {
+            throw new ReviewForbiddenException(
+                reviewId,
+                requesterId,
+                review.getAuthorId()
+            );
+        }
+
+        review.deleteReview();
+
+        reviewRepository.save(review);
     }
 }
