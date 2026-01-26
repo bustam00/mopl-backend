@@ -23,6 +23,7 @@ import com.mopl.domain.service.user.UserService;
 import com.mopl.domain.support.cursor.CursorResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Collections;
@@ -150,6 +151,7 @@ public class PlaylistFacade {
 
         return playlistResponseMapper.toResponse(playlistModel);
     }
+
 
     public void deletePlaylist(
         UUID requesterId,
