@@ -14,8 +14,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationService {
 
-    private final NotificationRepository notificationRepository;
     private final NotificationQueryRepository notificationQueryRepository;
+    private final NotificationRepository notificationRepository;
 
     public CursorResponse<NotificationModel> getAll(
         UUID receiverId,
@@ -26,7 +26,7 @@ public class NotificationService {
 
     public NotificationModel getById(UUID notificationId) {
         return notificationRepository.findById(notificationId)
-            .orElseThrow(() -> new NotificationNotFoundException(notificationId));
+            .orElseThrow(() -> NotificationNotFoundException.withId(notificationId));
     }
 
     public NotificationModel create(NotificationModel notification) {

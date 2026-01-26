@@ -6,7 +6,7 @@ dependencies {
     implementation(project(":infrastructure:jpa"))
     implementation(project(":infrastructure:openapi"))
     implementation(project(":infrastructure:storage"))
-    implementation(project(":shared:jackson"))
+    implementation(project(":infrastructure:search"))
 
     // batch
     implementation("org.springframework.boot:spring-boot-starter-batch")

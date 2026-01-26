@@ -1,6 +1,6 @@
 package com.mopl.api.application.follow;
 
-import com.mopl.api.application.outbox.DomainEventOutboxMapper;
+import com.mopl.dto.outbox.DomainEventOutboxMapper;
 import com.mopl.domain.event.user.UserFollowedEvent;
 import com.mopl.domain.event.user.UserUnfollowedEvent;
 import com.mopl.domain.exception.follow.FollowNotAllowedException;
@@ -49,7 +49,7 @@ public class FollowFacade {
         FollowModel follow = followService.getById(followId);
 
         if (!follow.getFollowerId().equals(userId)) {
-            throw new FollowNotAllowedException(userId, followId);
+            throw FollowNotAllowedException.withRequesterIdAndFollowId(userId, followId);
         }
 
         UserUnfollowedEvent event = UserUnfollowedEvent.builder()

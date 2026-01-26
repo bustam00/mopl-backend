@@ -1,6 +1,3 @@
-server:
-  shutdown: graceful
-
 spring:
   main:
     web-application-type: none
@@ -17,6 +14,7 @@ spring:
       - jpa.yaml
       - storage.yaml
       - openapi.yaml
+      - search.yaml
 
   threads:
     virtual:
@@ -30,19 +28,31 @@ spring:
 
 mopl:
   batch:
+    run-on-startup:
+      enabled: false  # true로 변경하면 시작 시 아래 jobs 실행
+      jobs:
+        - tmdbGenreSyncJob
+        - tsdbLeagueSyncJob
+        - tmdbCollectJob
+        - tsdbLeagueEventCollectJob
+
     cleanup:
       defaults:
-        chunk-size: 500
-        retention-days: 30 # 0으로 하면 즉시 삭제
-
+        chunk-size: ${MOPL_BATCH_CLEANUP_CHUNK_SIZE:500}
+        retention-days: ${MOPL_BATCH_CLEANUP_RETENTION_DAYS:30}
       storage:
-        chunk-size: 200
+        chunk-size: ${MOPL_BATCH_CLEANUP_STORAGE_CHUNK_SIZE:200}
 
     collect:
       tmdb:
         defaults:
-          max-page: 20
-
+          max-page: ${MOPL_BATCH_COLLECT_TMDB_MAX_PAGE:20}
       tsdb:
         defaults:
-          sleep-ms: 300
+          sleep-ms: ${MOPL_BATCH_COLLECT_TSDB_SLEEP_MS:300}
+
+    sync:
+      es:
+        initial-enabled: ${MOPL_BATCH_SYNC_ES_INITIAL_ENABLED:false}
+        defaults:
+          chunk-size: ${MOPL_BATCH_SYNC_ES_CHUNK_SIZE:500}

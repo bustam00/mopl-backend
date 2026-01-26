@@ -54,12 +54,12 @@ public class PlaylistContentRepositoryImpl implements PlaylistContentRepository 
         try {
             jpaPlaylistContentRepository.save(entity);
         } catch (DataIntegrityViolationException exception) {
-            throw new PlaylistContentAlreadyExistsException(playlistId, contentId);
+            throw PlaylistContentAlreadyExistsException.withPlaylistIdAndContentId(playlistId, contentId);
         }
     }
 
     @Override
-    public boolean delete(UUID playlistId, UUID contentId) {
+    public boolean deleteByPlaylistIdAndContentId(UUID playlistId, UUID contentId) {
         int deletedCount = jpaPlaylistContentRepository.deleteByPlaylistIdAndContentId(
             playlistId,
             contentId
@@ -68,7 +68,7 @@ public class PlaylistContentRepositoryImpl implements PlaylistContentRepository 
     }
 
     @Override
-    public Map<UUID, List<ContentModel>> findContentsByPlaylistIds(Collection<UUID> playlistIds) {
+    public Map<UUID, List<ContentModel>> findContentsByPlaylistIdIn(Collection<UUID> playlistIds) {
         if (playlistIds.isEmpty()) {
             return Map.of();
         }

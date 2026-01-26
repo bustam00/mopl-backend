@@ -2,13 +2,12 @@ package com.mopl.domain.service.playlist;
 
 import com.mopl.domain.exception.playlist.PlaylistSubscriptionAlreadyExistsException;
 import com.mopl.domain.exception.playlist.PlaylistSubscriptionNotFoundException;
-import com.mopl.domain.repository.playlist.PlaylistSubscriberCountRepository;
+import com.mopl.domain.repository.playlist.PlaylistRepository;
 import com.mopl.domain.repository.playlist.PlaylistSubscriberRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,16 +15,7 @@ import java.util.UUID;
 public class PlaylistSubscriptionService {
 
     private final PlaylistSubscriberRepository playlistSubscriberRepository;
-    private final PlaylistSubscriberCountRepository playlistSubscriberCountRepository;
-
-    // TODO: redis 장애 시 fallback
-    public long getSubscriberCount(UUID playlistId) {
-        return playlistSubscriberCountRepository.getCount(playlistId);
-    }
-
-    public Map<UUID, Long> getSubscriberCounts(Collection<UUID> playlistIds) {
-        return playlistSubscriberCountRepository.getCounts(playlistIds);
-    }
+    private final PlaylistRepository playlistRepository;
 
     public boolean isSubscribedByPlaylistIdAndSubscriberId(
         UUID playlistId,
@@ -49,13 +39,15 @@ public class PlaylistSubscriptionService {
     }
 
     public void subscribe(UUID playlistId, UUID subscriberId) {
-        if (playlistSubscriberRepository.existsByPlaylistIdAndSubscriberId(playlistId,
-            subscriberId)) {
-            throw new PlaylistSubscriptionAlreadyExistsException(playlistId, subscriberId);
+        if (playlistSubscriberRepository.existsByPlaylistIdAndSubscriberId(
+            playlistId,
+            subscriberId)
+        ) {
+            throw PlaylistSubscriptionAlreadyExistsException.withPlaylistIdAndSubscriberId(playlistId, subscriberId);
         }
 
         playlistSubscriberRepository.save(playlistId, subscriberId);
-        playlistSubscriberCountRepository.increment(playlistId);
+        playlistRepository.incrementSubscriberCount(playlistId);
     }
 
     public void unsubscribe(UUID playlistId, UUID subscriberId) {
@@ -64,8 +56,8 @@ public class PlaylistSubscriptionService {
             subscriberId
         );
         if (!deleted) {
-            throw new PlaylistSubscriptionNotFoundException(playlistId, subscriberId);
+            throw PlaylistSubscriptionNotFoundException.withPlaylistIdAndSubscriberId(playlistId, subscriberId);
         }
-        playlistSubscriberCountRepository.decrement(playlistId);
+        playlistRepository.decrementSubscriberCount(playlistId);
     }
 }

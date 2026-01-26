@@ -11,7 +11,6 @@ import java.util.UUID;
 
 public interface JpaContentTagRepository extends JpaRepository<ContentTagEntity, Long> {
 
-    // @Query를 사용하여 Tag 엔티티까지 한 번에 조회
     @Query("""
             select ct
             from ContentTagEntity ct
@@ -28,7 +27,6 @@ public interface JpaContentTagRepository extends JpaRepository<ContentTagEntity,
         """)
     List<ContentTagEntity> findAllByContentIdIn(@Param("contentIds") List<UUID> contentIds);
 
-    // 벌크 삭제 수행 (주의: 영속성 컨텍스트를 무시하고 DB에 직접 쿼리함)
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("""
             delete from ContentTagEntity ct

@@ -1,8 +1,8 @@
 package com.mopl.api.application.notification;
 
-import com.mopl.api.interfaces.api.notification.NotificationResponse;
-import com.mopl.api.interfaces.api.notification.NotificationResponseMapper;
-import com.mopl.domain.exception.notification.NotificationOwnershipException;
+import com.mopl.dto.notification.NotificationResponse;
+import com.mopl.dto.notification.NotificationResponseMapper;
+import com.mopl.domain.exception.notification.NotificationForbiddenException;
 import com.mopl.domain.exception.user.UserNotFoundException;
 import com.mopl.domain.fixture.NotificationModelFixture;
 import com.mopl.domain.fixture.UserModelFixture;
@@ -43,6 +43,7 @@ class NotificationFacadeTest {
     private UserService userService;
 
     @Spy
+    @SuppressWarnings("unused")
     private NotificationResponseMapper notificationResponseMapper = new NotificationResponseMapper();
 
     @InjectMocks
@@ -90,7 +91,7 @@ class NotificationFacadeTest {
 
             // then
             assertThat(result.data()).hasSize(2);
-            assertThat(result.data().get(0).title()).isEqualTo("알림1");
+            assertThat(result.data().getFirst().title()).isEqualTo("알림1");
             assertThat(result.data().get(1).title()).isEqualTo("알림2");
             assertThat(result.hasNext()).isTrue();
             assertThat(result.totalCount()).isEqualTo(10);
@@ -196,7 +197,7 @@ class NotificationFacadeTest {
 
             // when & then
             assertThatThrownBy(() -> notificationFacade.readNotification(userId, notificationId))
-                .isInstanceOf(NotificationOwnershipException.class);
+                .isInstanceOf(NotificationForbiddenException.class);
 
             then(notificationService).should().getById(notificationId);
             then(notificationService).shouldHaveNoMoreInteractions();

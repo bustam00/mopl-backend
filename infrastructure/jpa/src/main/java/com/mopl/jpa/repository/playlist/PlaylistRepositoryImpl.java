@@ -32,14 +32,23 @@ public class PlaylistRepositoryImpl implements PlaylistRepository {
         return playlistEntityMapper.toModelWithOwner(savedPlaylistEntity);
     }
 
-    // 이하 메서드들 cleanup batch 전용
     @Override
     public List<UUID> findCleanupTargets(Instant threshold, int limit) {
         return jpaPlaylistRepository.findCleanupTargets(threshold, limit);
     }
 
     @Override
-    public int deleteAllByIds(List<UUID> playlistIds) {
-        return jpaPlaylistRepository.deleteAllByIds(playlistIds);
+    public int deleteByIdIn(List<UUID> playlistIds) {
+        return jpaPlaylistRepository.deleteByIdIn(playlistIds);
+    }
+
+    @Override
+    public void incrementSubscriberCount(UUID playlistId) {
+        jpaPlaylistRepository.incrementSubscriberCount(playlistId);
+    }
+
+    @Override
+    public void decrementSubscriberCount(UUID playlistId) {
+        jpaPlaylistRepository.decrementSubscriberCount(playlistId);
     }
 }
