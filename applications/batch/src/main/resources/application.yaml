@@ -8,6 +8,12 @@ spring:
   profiles:
     active: batch, local, cleanup-deletion-log
 
+  # [1] 여기에 Redis 설정을 추가하세요!
+  data:
+    redis:
+      host: localhost  # 로컬이 아니면 IP 입력
+      port: 6379
+
   config:
     import:
       - optional:file:.env[.properties]
@@ -42,6 +48,10 @@ mopl:
         retention-days: ${MOPL_BATCH_CLEANUP_RETENTION_DAYS:30}
       storage:
         chunk-size: ${MOPL_BATCH_CLEANUP_STORAGE_CHUNK_SIZE:200}
+      orphan:
+        defaults:
+          chunk-size: ${MOPL_BATCH_CLEANUP_ORPHAN_CHUNK_SIZE:500}
+          grace-period-days: ${MOPL_BATCH_CLEANUP_ORPHAN_GRACE_PERIOD_DAYS:1}
 
     collect:
       tmdb:
@@ -56,3 +66,21 @@ mopl:
         initial-enabled: ${MOPL_BATCH_SYNC_ES_INITIAL_ENABLED:false}
         defaults:
           chunk-size: ${MOPL_BATCH_SYNC_ES_CHUNK_SIZE:500}
+
+  # 모니터링을 위한 설정
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+      environment: ${SPRING_PROFILES_ACTIVE:local}
+      denormalized:
+        default-policy:
+          batch-size: ${MOPL_BATCH_SYNC_DENORMALIZED_BATCH_SIZE:500}
