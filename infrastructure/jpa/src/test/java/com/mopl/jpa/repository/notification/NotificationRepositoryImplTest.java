@@ -207,27 +207,6 @@ class NotificationRepositoryImplTest {
             assertThat(savedNotification.getTitle()).isEqualTo("내용 없는 알림");
             assertThat(savedNotification.getContent()).isNull();
         }
-
-        @Test
-        @DisplayName("삭제된 알림을 저장하면 deletedAt이 유지된다")
-        void withDeletedNotification_preservesDeletedAt() {
-            // given
-            NotificationModel notificationModel = NotificationModel.create(
-                "삭제될 알림",
-                "삭제 테스트용",
-                NotificationModel.NotificationLevel.INFO,
-                savedReceiverId
-            );
-            NotificationModel savedNotification = notificationRepository.save(notificationModel);
-            savedNotification.delete();
-
-            // when
-            NotificationModel updatedNotification = notificationRepository.save(savedNotification);
-
-            // then
-            assertThat(updatedNotification.isDeleted()).isTrue();
-            assertThat(updatedNotification.getDeletedAt()).isNotNull();
-        }
     }
 
     @Nested
@@ -285,6 +264,42 @@ class NotificationRepositoryImplTest {
 
             // then
             assertThat(savedNotifications).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("delete()")
+    class DeleteTest {
+
+        @Test
+        @DisplayName("존재하는 알림을 삭제하면 조회되지 않는다")
+        void withExistingId_deletesNotification() {
+            // given
+            NotificationModel savedNotification = notificationRepository.save(
+                NotificationModel.create(
+                    "삭제할 알림",
+                    "삭제 테스트용 알림입니다.",
+                    NotificationModel.NotificationLevel.INFO,
+                    savedReceiverId
+                )
+            );
+            UUID notificationId = savedNotification.getId();
+
+            // when
+            notificationRepository.delete(notificationId);
+
+            // then
+            assertThat(notificationRepository.findById(notificationId)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 알림 ID로 삭제해도 예외가 발생하지 않는다")
+        void withNonExistingId_doesNotThrowException() {
+            // given
+            UUID nonExistingId = UUID.randomUUID();
+
+            // when & then
+            notificationRepository.delete(nonExistingId);
         }
     }
 }

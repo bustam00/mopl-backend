@@ -1,8 +1,8 @@
 package com.mopl.api.config;
 
-import com.mopl.domain.repository.content.query.ContentQueryRepository;
 import com.mopl.domain.repository.content.ContentRepository;
 import com.mopl.domain.repository.content.ContentTagRepository;
+import com.mopl.domain.repository.content.query.ContentQueryRepository;
 import com.mopl.domain.repository.conversation.ConversationQueryRepository;
 import com.mopl.domain.repository.conversation.ConversationRepository;
 import com.mopl.domain.repository.conversation.DirectMessageQueryRepository;

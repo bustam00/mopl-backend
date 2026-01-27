@@ -15,21 +15,17 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(
     name = "playlists",
     indexes = {
-        @Index(name = "idx_playlists_deleted_at", columnList = "deleted_at"),
-        @Index(name = "idx_playlists_owner_id", columnList = "owner_id"),
-        @Index(name = "idx_playlists_created_at", columnList = "created_at")
+        @Index(name = "idx_playlists_owner_updated_at", columnList = "owner_id, updated_at DESC")
     }
 )
 @Getter
-@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLRestriction("deleted_at IS NULL")
+@SuperBuilder
 public class PlaylistEntity extends BaseUpdatableEntity {
 
     @Column(nullable = false)

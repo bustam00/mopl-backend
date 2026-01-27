@@ -1,10 +1,7 @@
 package com.mopl.jpa.entity.follow;
 
-import org.hibernate.annotations.SQLRestriction;
-
 import com.mopl.jpa.entity.base.BaseEntity;
 import com.mopl.jpa.entity.user.UserEntity;
-
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -13,6 +10,7 @@ import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -22,16 +20,13 @@ import lombok.experimental.SuperBuilder;
 @Table(
     name = "follows",
     indexes = {
-        @Index(name = "idx_follows_follower_id", columnList = "follower_id"),
-        @Index(name = "idx_follows_followee_id", columnList = "followee_id"),
-        @Index(name = "idx_follows_deleted_at", columnList = "deleted_at"),
-        @Index(name = "idx_follows_created_at", columnList = "created_at")
-    }
+        @Index(name = "idx_follows_followee_id", columnList = "followee_id")
+    },
+    uniqueConstraints = @UniqueConstraint(columnNames = {"follower_id", "followee_id"})
 )
 @Getter
-@SuperBuilder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@SQLRestriction("deleted_at IS NULL")
+@SuperBuilder
 public class FollowEntity extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

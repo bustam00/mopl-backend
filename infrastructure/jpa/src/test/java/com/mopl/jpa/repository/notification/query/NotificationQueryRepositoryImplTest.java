@@ -169,38 +169,6 @@ class NotificationQueryRepositoryImplTest {
             assertThat(response.totalCount()).isZero();
             assertThat(response.hasNext()).isFalse();
         }
-
-        @Test
-        @DisplayName("삭제된 알림은 조회되지 않음")
-        void withDeletedNotification_excludesFromQuery() {
-            // given
-            Instant now = Instant.now();
-            NotificationEntity deletedNotification = NotificationEntity.builder()
-                .createdAt(now)
-                .title("삭제된 알림")
-                .content("삭제된 내용")
-                .level(NotificationModel.NotificationLevel.INFO)
-                .receiverId(user1.getId())
-                .deletedAt(now)
-                .build();
-            entityManager.persist(deletedNotification);
-            entityManager.flush();
-            entityManager.clear();
-
-            NotificationQueryRequest request = new NotificationQueryRequest(
-                null, null, 100, SortDirection.ASCENDING, NotificationSortField.CREATED_AT
-            );
-
-            // when
-            CursorResponse<NotificationModel> response = notificationQueryRepository.findAll(
-                user1.getId(), request
-            );
-
-            // then
-            assertThat(response.data()).hasSize(5); // 삭제된 알림 제외
-            assertThat(response.data())
-                .noneMatch(n -> n.getTitle().equals("삭제된 알림"));
-        }
     }
 
     @Nested
@@ -397,6 +365,122 @@ class NotificationQueryRepositoryImplTest {
             assertThat(response.data()).hasSize(5);
             assertThat(response.sortDirection()).isEqualTo(SortDirection.ASCENDING);
             assertThat(response.sortBy()).isEqualTo("CREATED_AT");
+        }
+
+        @Test
+        @DisplayName("receiverId가 null이면 모든 알림 조회")
+        void withNullReceiverId_returnsAllNotifications() {
+            // given
+            NotificationQueryRequest request = new NotificationQueryRequest(
+                null, null, 100, SortDirection.ASCENDING, NotificationSortField.CREATED_AT
+            );
+
+            // when
+            CursorResponse<NotificationModel> response = notificationQueryRepository.findAll(
+                null, request
+            );
+
+            // then
+            assertThat(response.data()).hasSize(7); // user1: 5개 + user2: 2개
+            assertThat(response.totalCount()).isEqualTo(7);
+        }
+    }
+
+    @Nested
+    @DisplayName("findByReceiverIdAndCreatedAtAfter()")
+    class FindByReceiverIdAndCreatedAtAfterTest {
+
+        @Test
+        @DisplayName("특정 시간 이후에 생성된 알림만 조회")
+        void withCreatedAtAfter_returnsNotificationsAfterTime() {
+            // given
+            // 먼저 모든 알림을 조회하여 3번째 알림의 시간을 기준으로 사용
+            NotificationQueryRequest allRequest = new NotificationQueryRequest(
+                null, null, 100, SortDirection.ASCENDING, NotificationSortField.CREATED_AT
+            );
+            CursorResponse<NotificationModel> allNotifications = notificationQueryRepository.findAll(
+                user1.getId(), allRequest
+            );
+            // 알림3(index 2)의 createdAt 이후 → 알림4, 알림5만 조회
+            Instant createdAfter = allNotifications.data().get(2).getCreatedAt();
+
+            // when
+            var notifications = notificationQueryRepository.findByReceiverIdAndCreatedAtAfter(
+                user1.getId(), createdAfter
+            );
+
+            // then
+            assertThat(notifications).hasSize(2);
+            assertThat(notifications)
+                .extracting(NotificationModel::getTitle)
+                .containsExactly("알림4", "알림5");
+        }
+
+        @Test
+        @DisplayName("미래 시간을 기준으로 조회하면 빈 결과 반환")
+        void withFutureTime_returnsEmptyList() {
+            // given
+            Instant futureTime = Instant.now().plus(1, ChronoUnit.DAYS);
+
+            // when
+            var notifications = notificationQueryRepository.findByReceiverIdAndCreatedAtAfter(
+                user1.getId(), futureTime
+            );
+
+            // then
+            assertThat(notifications).isEmpty();
+        }
+
+        @Test
+        @DisplayName("생성일시 오름차순으로 정렬되어 반환")
+        void returnsNotificationsSortedByCreatedAtAscending() {
+            // given
+            // 모든 알림보다 이전 시간 사용
+            Instant createdAfter = Instant.EPOCH;
+
+            // when
+            var notifications = notificationQueryRepository.findByReceiverIdAndCreatedAtAfter(
+                user1.getId(), createdAfter
+            );
+
+            // then
+            assertThat(notifications).hasSize(5);
+            assertThat(notifications)
+                .extracting(NotificationModel::getTitle)
+                .containsExactly("알림1", "알림2", "알림3", "알림4", "알림5");
+        }
+
+        @Test
+        @DisplayName("다른 사용자의 알림은 조회되지 않음")
+        void withReceiverId_filtersOtherUserNotifications() {
+            // given
+            Instant createdAfter = Instant.EPOCH;
+
+            // when
+            var notifications = notificationQueryRepository.findByReceiverIdAndCreatedAtAfter(
+                user2.getId(), createdAfter
+            );
+
+            // then
+            assertThat(notifications).hasSize(2);
+            assertThat(notifications)
+                .allMatch(n -> n.getReceiverId().equals(user2.getId()));
+        }
+
+        @Test
+        @DisplayName("알림이 없는 사용자 조회 시 빈 결과 반환")
+        void withNoNotifications_returnsEmptyList() {
+            // given
+            UUID nonExistentUserId = UUID.randomUUID();
+            Instant createdAfter = Instant.EPOCH;
+
+            // when
+            var notifications = notificationQueryRepository.findByReceiverIdAndCreatedAtAfter(
+                nonExistentUserId, createdAfter
+            );
+
+            // then
+            assertThat(notifications).isEmpty();
         }
     }
 }

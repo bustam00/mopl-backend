@@ -139,21 +139,21 @@ class PlaylistCacheServiceTest {
         }
     }
 
-    @DisplayName("saveAndEvict()")
+    @DisplayName("delete()")
     @Nested
-    class SaveAndEvictTest {
+    class DeleteTest {
 
-        @DisplayName("플레이리스트 저장 후 캐시 evict")
+        @DisplayName("플레이리스트 삭제 후 캐시 evict")
         @Test
-        void savesPlaylistAndEvictsCache() {
+        void deletesPlaylistAndEvictsCache() {
             // given
-            PlaylistModel playlistModel = PlaylistModelFixture.create();
+            UUID playlistId = UUID.randomUUID();
 
             // when
-            playlistCacheService.saveAndEvict(playlistModel);
+            playlistCacheService.delete(playlistId);
 
             // then
-            then(playlistRepository).should().save(playlistModel);
+            then(playlistRepository).should().delete(playlistId);
         }
     }
 }

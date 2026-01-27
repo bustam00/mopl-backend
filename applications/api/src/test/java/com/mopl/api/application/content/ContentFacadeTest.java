@@ -78,7 +78,6 @@ class ContentFacadeTest {
     private ContentSearchSyncPort contentSearchSyncPort;
 
     @Mock
-    @SuppressWarnings("unused")
     private AfterCommitExecutor afterCommitExecutor;
 
     @Mock
@@ -88,8 +87,15 @@ class ContentFacadeTest {
     private ContentFacade contentFacade;
 
     @BeforeEach
-    void resetMocks() {
+    void setUp() {
         reset(multipartFile);
+    }
+
+    private void setupAfterCommitExecutor() {
+        willAnswer(invocation -> {
+            invocation.<Runnable>getArgument(0).run();
+            return null;
+        }).given(afterCommitExecutor).execute(any());
     }
 
     private static final String DEFAULT_TITLE = "시빌엄";
@@ -435,6 +441,7 @@ class ContentFacadeTest {
             given(contentResponseMapper.toResponse(any(), anyList(), anyLong())).willReturn(expectedResponse);
 
             setupTransactionTemplate();
+            setupAfterCommitExecutor();
 
             // when
             ContentResponse result = contentFacade.upload(request, multipartFile);
@@ -444,6 +451,7 @@ class ContentFacadeTest {
             then(storageProvider).should().upload(any(), eq(1024L), anyString());
             then(contentService).should().create(any(ContentModel.class));
             then(contentTagService).should().applyTags(contentId, tags);
+            then(contentSearchSyncPort).should().upsert(any(ContentModel.class));
         }
 
         @Test
@@ -582,6 +590,7 @@ class ContentFacadeTest {
             given(contentResponseMapper.toResponse(any(), anyList(), anyLong())).willReturn(expectedResponse);
 
             setupTransactionTemplate();
+            setupAfterCommitExecutor();
 
             // when
             ContentResponse result = contentFacade.update(contentId, request, multipartFile);
@@ -591,6 +600,7 @@ class ContentFacadeTest {
             then(storageProvider).should().upload(any(), eq(2048L), anyString());
             then(contentTagService).should().deleteAllByContentId(contentId);
             then(contentTagService).should().applyTags(contentId, newTags);
+            then(contentSearchSyncPort).should().upsert(any(ContentModel.class));
         }
 
         @Test
@@ -702,6 +712,7 @@ class ContentFacadeTest {
                 return null;
             }).given(transactionTemplate).executeWithoutResult(any());
 
+            setupAfterCommitExecutor();
             given(contentService.getById(contentId)).willReturn(contentModel);
 
             // when
