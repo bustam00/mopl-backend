@@ -158,7 +158,6 @@ public class PlaylistFacade {
         });
     }
 
-
     public void deletePlaylist(
         UUID requesterId,
         UUID playlistId
