@@ -29,7 +29,7 @@ spring:
 mopl:
   batch:
     run-on-startup:
-      enabled: false  # true로 변경하면 시작 시 아래 jobs 실행
+      enabled: true  # true로 변경하면 시작 시 아래 jobs 실행
       jobs:
         - tmdbGenreSyncJob
         - tsdbLeagueSyncJob
@@ -57,7 +57,7 @@ mopl:
 
     sync:
       es:
-        initial-enabled: ${MOPL_BATCH_SYNC_ES_INITIAL_ENABLED:false}
+        initial-enabled: ${MOPL_BATCH_SYNC_ES_INITIAL_ENABLED:true}
         defaults:
           chunk-size: ${MOPL_BATCH_SYNC_ES_CHUNK_SIZE:500}
       denormalized:
