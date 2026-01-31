@@ -1,6 +1,7 @@
 package com.mopl.jpa.support.transaction;
 
 import com.mopl.domain.support.transaction.AfterCommitExecutor;
+import com.mopl.logging.context.LogContext;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -20,7 +21,13 @@ public class SpringAfterCommitExecutor implements AfterCommitExecutor {
 
                 @Override
                 public void afterCommit() {
-                    action.run();
+                    Thread.startVirtualThread(() -> {
+                        try {
+                            action.run();
+                        } catch (Exception e) {
+                            LogContext.with("executor", "afterCommit").error("Error executing action", e);
+                        }
+                    });
                 }
             }
         );

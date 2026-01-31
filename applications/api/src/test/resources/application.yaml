@@ -1,15 +1,9 @@
+# =============================================================================
+# API Application Test Configuration
+# =============================================================================
+# test 프로필이 활성화되면 각 인프라 모듈의 yaml에 정의된 test 프로필 설정이 적용됩니다.
+# =============================================================================
+
 mopl:
   admin:
     enabled: false
-
-spring:
-  jpa:
-    show-sql: false
-
-logging:
-  level:
-    org.hibernate.SQL: OFF
-    org.hibernate.orm.jdbc.bind: OFF
-    org.hibernate.tool.hbm2ddl: OFF
-    org.hibernate.orm.tool.schema: OFF
-    org.springframework.orm.jpa: OFF

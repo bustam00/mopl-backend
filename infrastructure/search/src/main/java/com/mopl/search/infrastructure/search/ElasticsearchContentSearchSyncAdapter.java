@@ -3,15 +3,16 @@ package com.mopl.search.infrastructure.search;
 import com.mopl.domain.model.content.ContentModel;
 import com.mopl.domain.support.search.ContentSearchSyncPort;
 import com.mopl.search.content.service.ContentIndexService;
-import java.util.List;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+import java.util.UUID;
+
 @Component
-@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "mopl.search", name = "enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class ElasticsearchContentSearchSyncAdapter implements ContentSearchSyncPort {
 
     private final ContentIndexService indexService;

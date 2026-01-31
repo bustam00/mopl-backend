@@ -3,7 +3,7 @@ package com.mopl.cache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.mopl.cache.config.CacheProperties;
 import com.mopl.domain.support.cache.CacheName;
-import lombok.extern.slf4j.Slf4j;
+import com.mopl.logging.context.LogContext;
 import org.springframework.cache.CacheManager;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.NonNull;
@@ -13,29 +13,32 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
 public class TwoLevelCacheManager implements CacheManager {
 
     private final Cache<String, Object> l1Cache;
     private final RedisTemplate<String, Object> redisTemplate;
     private final CacheProperties properties;
+    private final CacheMetrics metrics;
     private final Map<String, TwoLevelCache> caches = new ConcurrentHashMap<>();
 
     public TwoLevelCacheManager(
         Cache<String, Object> l1Cache,
         @Nullable RedisTemplate<String, Object> redisTemplate,
-        CacheProperties properties
+        CacheProperties properties,
+        @Nullable CacheMetrics metrics
     ) {
         this.l1Cache = l1Cache;
         this.redisTemplate = redisTemplate;
         this.properties = properties;
+        this.metrics = metrics;
 
         for (String cacheName : CacheName.all()) {
             caches.put(cacheName, createCache(cacheName));
         }
 
-        log.info("TwoLevelCacheManager initialized: [caches={}, redisEnabled={}]",
-            caches.keySet(), redisTemplate != null);
+        LogContext.with("caches", caches.keySet())
+            .and("redisEnabled", redisTemplate != null)
+            .info("TwoLevelCacheManager initialized");
     }
 
     @Override
@@ -56,7 +59,8 @@ public class TwoLevelCacheManager implements CacheManager {
             l1Cache,
             redisTemplate,
             properties,
-            properties.l2().defaultTtl()
+            properties.getTtlFor(name),
+            metrics
         );
     }
 }

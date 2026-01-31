@@ -1,5 +1,8 @@
 import org.springframework.boot.gradle.tasks.bundling.BootJar
 
+// =============================================================================
+// 1. Plugins
+// =============================================================================
 plugins {
     java
     id("org.springframework.boot") version "3.3.3" apply false
@@ -9,23 +12,17 @@ plugins {
     jacoco
 }
 
+// =============================================================================
+// 2. Project Properties (from gradle.properties)
+// =============================================================================
+val projectGroup: String by project
 val springBootVersion: String by project
-val checkstyleVersion = "10.12.3"
+val checkstyleVersion: String by project
+val testcontainersVersion: String by project
 
-val jacocoExclusions = listOf(
-    "**/entity/**/Q*.class",
-    "**/*Application.class"
-)
-
-val jacocoAggregateExclusions = jacocoExclusions + listOf(
-    "**/*Config.class",
-    "**/*Config$*.class",
-    "**/*Properties.class",
-    "**/*Properties$*.class",
-    "**/*Event.class",
-    "**/*Event$*.class",
-)
-
+// =============================================================================
+// 3. Project Configuration
+// =============================================================================
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -33,7 +30,7 @@ java {
 }
 
 allprojects {
-    group = "com.mopl"
+    group = projectGroup
     version = "0.0.1"
 
     repositories {
@@ -41,6 +38,9 @@ allprojects {
     }
 }
 
+// =============================================================================
+// 4. Subprojects Configuration
+// =============================================================================
 subprojects {
     apply(plugin = "java")
     apply(plugin = "io.spring.dependency-management")
@@ -51,6 +51,7 @@ subprojects {
     dependencyManagement {
         imports {
             mavenBom("org.springframework.boot:spring-boot-dependencies:$springBootVersion")
+            mavenBom("org.testcontainers:testcontainers-bom:$testcontainersVersion")
         }
     }
 
@@ -70,28 +71,40 @@ subprojects {
     }
 
     configureJarTasks()
+    configureCompileTasks()
     configureTestTasks()
     configureJacoco()
     configureSpotless()
     configureCheckstyle()
 }
 
+// Disable tasks for parent modules (no source code)
+listOf("applications", "core", "infrastructure", "shared").forEach { name ->
+    project(name) { tasks.configureEach { enabled = false } }
+}
+
+// =============================================================================
+// 5. Extension Functions - Task Configuration
+// =============================================================================
 fun Project.configureJarTasks() {
     tasks.withType<Jar> { enabled = true }
     tasks.withType<BootJar> { enabled = false }
 
-    if (parent?.name == "applications" && name != "api") {
+    if (parent?.name == "applications") {
+        apply(plugin = "org.springframework.boot")
         tasks.withType<Jar> { enabled = false }
         tasks.withType<BootJar> { enabled = true }
     }
 }
 
-fun Project.configureTestTasks() {
+fun Project.configureCompileTasks() {
     tasks.withType<JavaCompile> {
         options.encoding = "UTF-8"
         options.compilerArgs.add("-parameters")
     }
+}
 
+fun Project.configureTestTasks() {
     tasks.withType<Test> {
         systemProperty("file.encoding", "UTF-8")
     }
@@ -102,23 +115,6 @@ fun Project.configureTestTasks() {
         systemProperty("user.timezone", "Asia/Seoul")
         systemProperty("spring.profiles.active", "test")
         jvmArgs("-Xshare:off")
-    }
-}
-
-fun Project.configureJacoco() {
-    tasks.withType<JacocoReport> {
-        mustRunAfter("test")
-        executionData(fileTree(layout.buildDirectory.asFile).include("jacoco/*.exec"))
-        reports {
-            xml.required = true
-            csv.required = false
-            html.required = false
-        }
-        afterEvaluate {
-            classDirectories.setFrom(
-                files(classDirectories.files.map { fileTree(it).exclude(jacocoExclusions) })
-            )
-        }
     }
 }
 
@@ -144,16 +140,57 @@ fun Project.configureCheckstyle() {
     }
 }
 
-listOf("applications", "core", "infrastructure", "shared").forEach { name ->
-    project(name) { tasks.configureEach { enabled = false } }
+// =============================================================================
+// 6. JaCoCo Configuration
+// =============================================================================
+val jacocoExclusions = listOf(
+    "**/entity/**/Q*.class",
+    "**/*Application.class"
+)
+
+val jacocoAggregateExclusions = jacocoExclusions + listOf(
+    "**/*Config.class",
+    "**/*Config$*.class",
+    "**/*Properties.class",
+    "**/*Properties$*.class",
+    "**/*Event.class",
+    "**/*Event$*.class",
+)
+
+val coverageExcludedModules = setOf(
+    ":applications:batch",
+    ":infrastructure:openapi",
+    ":shared:logging",
+    ":shared:test",
+    ":shared:test-core",
+)
+
+fun Project.configureJacoco() {
+    tasks.withType<JacocoReport> {
+        mustRunAfter("test")
+        executionData(fileTree(layout.buildDirectory.asFile).include("jacoco/*.exec"))
+        reports {
+            xml.required = true
+            csv.required = false
+            html.required = false
+        }
+        afterEvaluate {
+            classDirectories.setFrom(
+                files(classDirectories.files.map { fileTree(it).exclude(jacocoExclusions) })
+            )
+        }
+    }
 }
 
 tasks.named<JacocoReport>("jacocoTestReport") {
     description = "Generates an aggregate JaCoCo report from all subprojects"
-    dependsOn(subprojects.mapNotNull { it.tasks.findByName("jacocoTestReport") })
+
+    val targetSubprojects = subprojects.filter { it.path !in coverageExcludedModules }
+
+    dependsOn(targetSubprojects.mapNotNull { it.tasks.findByName("jacocoTestReport") })
 
     executionData.setFrom(
-        files(subprojects.flatMap { subproject ->
+        files(targetSubprojects.flatMap { subproject ->
             subproject.layout.buildDirectory.asFile.get()
                 .resolve("jacoco")
                 .listFiles()
@@ -163,11 +200,11 @@ tasks.named<JacocoReport>("jacocoTestReport") {
     )
 
     sourceDirectories.setFrom(
-        files(subprojects.flatMap { it.the<SourceSetContainer>()["main"].allSource.srcDirs })
+        files(targetSubprojects.flatMap { it.the<SourceSetContainer>()["main"].allSource.srcDirs })
     )
 
     classDirectories.setFrom(
-        files(subprojects.flatMap { subproject ->
+        files(targetSubprojects.flatMap { subproject ->
             subproject.the<SourceSetContainer>()["main"].output.classesDirs.map {
                 fileTree(it).exclude(jacocoAggregateExclusions)
             }

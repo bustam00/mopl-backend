@@ -1,21 +1,20 @@
 package com.mopl.batch.collect.tmdb.service.content;
 
-import com.mopl.batch.collect.tmdb.config.properties.TmdbCollectPolicyResolver;
-import com.mopl.batch.collect.tmdb.config.properties.TmdbCollectProperties;
+import com.mopl.batch.collect.tmdb.config.TmdbCollectPolicyResolver;
+import com.mopl.batch.collect.tmdb.config.TmdbCollectProperties;
 import com.mopl.domain.model.content.ContentModel;
 import com.mopl.domain.support.search.ContentSearchSyncPort;
 import com.mopl.domain.support.transaction.AfterCommitExecutor;
 import com.mopl.external.tmdb.client.TmdbClient;
 import com.mopl.external.tmdb.model.TmdbMovieItem;
 import com.mopl.external.tmdb.model.TmdbMovieResponse;
+import com.mopl.logging.context.LogContext;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TmdbPopularMovieContentCollectService {
@@ -29,27 +28,25 @@ public class TmdbPopularMovieContentCollectService {
     private final ContentSearchSyncPort contentSearchSyncPort;
 
     public int collectPopularMovies() {
-        int maxPage = policyResolver.maxPage(collectProperties.getMovieContent());
+        int maxPage = policyResolver.maxPage(collectProperties.movieContent());
         List<ContentModel> inserted = new ArrayList<>();
 
         for (int page = 1; page <= maxPage; page++) {
             TmdbMovieResponse response = tmdbClient.fetchPopularMovies(page);
 
             if (response == null || response.results() == null) {
-                log.debug(
-                    "TMDB movie results empty: page={}",
-                    page
-                );
+                LogContext.with("service", "tmdbMovieCollect")
+                    .and("page", page)
+                    .debug("Results empty");
                 continue;
             }
 
             for (TmdbMovieItem item : response.results()) {
                 if (!isValid(item)) {
-                    log.debug(
-                        "TMDB invalid movie skipped: page={}, externalId={}",
-                        page,
-                        item == null ? null : item.id()
-                    );
+                    LogContext.with("service", "tmdbMovieCollect")
+                        .and("page", page)
+                        .and("externalId", item == null ? null : item.id())
+                        .debug("Invalid movie skipped");
                     continue;
                 }
 
@@ -60,27 +57,24 @@ public class TmdbPopularMovieContentCollectService {
                     }
 
                 } catch (DataIntegrityViolationException e) {
-                    log.debug(
-                        "TMDB duplicate skipped: externalId={}",
-                        item.id()
-                    );
+                    LogContext.with("service", "tmdbMovieCollect")
+                        .and("externalId", item.id())
+                        .debug("Duplicate skipped");
 
                 } catch (RuntimeException e) {
-                    log.warn(
-                        "Failed to process TMDB movie: title={}, reason={}",
-                        item.title(),
-                        e.getMessage()
-                    );
+                    LogContext.with("service", "tmdbMovieCollect")
+                        .and("title", item.title())
+                        .and("reason", e.getMessage())
+                        .warn("Failed to process movie");
                 }
             }
         }
 
         afterCommitExecutor.execute(() -> contentSearchSyncPort.upsertAll(inserted));
 
-        log.info(
-            "TMDB movie collect done. inserted={}",
-            inserted.size()
-        );
+        LogContext.with("service", "tmdbMovieCollect")
+            .and("inserted", inserted.size())
+            .info("Collect completed");
 
         return inserted.size();
     }

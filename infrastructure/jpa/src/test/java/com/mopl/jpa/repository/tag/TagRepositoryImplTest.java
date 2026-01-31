@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Import;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,55 +27,6 @@ class TagRepositoryImplTest {
 
     @Autowired
     private TagRepository tagRepository;
-
-    @Nested
-    @DisplayName("findByName()")
-    class FindByNameTest {
-
-        @Test
-        @DisplayName("존재하는 이름으로 조회 시 TagModel 반환")
-        void withExistingName_returnsOptionalTag() {
-            // given
-            String tagName = "액션";
-            tagRepository.save(TagModel.create(tagName));
-
-            // when
-            Optional<TagModel> result = tagRepository.findByName(tagName);
-
-            // then
-            assertThat(result).isPresent();
-            assertThat(result.get().getName()).isEqualTo(tagName);
-        }
-
-        @Test
-        @DisplayName("존재하지 않는 이름으로 조회 시 빈 Optional 반환")
-        void withNonExistingName_returnsEmpty() {
-            // when
-            Optional<TagModel> result = tagRepository.findByName("NonExistent");
-
-            // then
-            assertThat(result).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayName("save()")
-    class SaveTest {
-
-        @Test
-        @DisplayName("새 태그 저장")
-        void withNewTag_savesAndReturnsTag() {
-            // given
-            TagModel tagModel = TagModel.create("SF");
-
-            // when
-            TagModel savedTag = tagRepository.save(tagModel);
-
-            // then
-            assertThat(savedTag.getId()).isNotNull();
-            assertThat(savedTag.getName()).isEqualTo("SF");
-        }
-    }
 
     @Nested
     @DisplayName("saveAll()")
@@ -102,6 +52,79 @@ class TagRepositoryImplTest {
             assertThat(savedTags)
                 .extracting(TagModel::getName)
                 .containsExactlyInAnyOrder("SF", "액션");
+        }
+    }
+
+    @Nested
+    @DisplayName("findByNameIn()")
+    class FindByNameInTest {
+
+        @Test
+        @DisplayName("이름 목록으로 태그를 조회한다")
+        void withTagNames_returnsTags() {
+            // given
+            tagRepository.saveAll(List.of(
+                TagModel.create("로맨스"),
+                TagModel.create("코미디"),
+                TagModel.create("스릴러")
+            ));
+
+            // when
+            List<TagModel> foundTags = tagRepository.findByNameIn(List.of("로맨스", "스릴러"));
+
+            // then
+            assertThat(foundTags).hasSize(2);
+            assertThat(foundTags)
+                .extracting(TagModel::getName)
+                .containsExactlyInAnyOrder("로맨스", "스릴러");
+        }
+
+        @Test
+        @DisplayName("빈 목록으로 조회하면 빈 리스트를 반환한다")
+        void withEmptyList_returnsEmptyList() {
+            // when
+            List<TagModel> foundTags = tagRepository.findByNameIn(List.of());
+
+            // then
+            assertThat(foundTags).isEmpty();
+        }
+
+        @Test
+        @DisplayName("null 목록으로 조회하면 빈 리스트를 반환한다")
+        void withNullList_returnsEmptyList() {
+            // when
+            List<TagModel> foundTags = tagRepository.findByNameIn(null);
+
+            // then
+            assertThat(foundTags).isEmpty();
+        }
+
+        @Test
+        @DisplayName("존재하지 않는 태그 이름으로 조회하면 빈 리스트를 반환한다")
+        void withNonExistingNames_returnsEmptyList() {
+            // when
+            List<TagModel> foundTags = tagRepository.findByNameIn(List.of("존재하지않는태그"));
+
+            // then
+            assertThat(foundTags).isEmpty();
+        }
+
+        @Test
+        @DisplayName("일부만 존재하는 태그 이름으로 조회하면 존재하는 태그만 반환한다")
+        void withPartiallyExistingNames_returnsExistingTags() {
+            // given
+            tagRepository.saveAll(List.of(
+                TagModel.create("판타지")
+            ));
+
+            // when
+            List<TagModel> foundTags = tagRepository.findByNameIn(
+                List.of("판타지", "존재하지않는태그")
+            );
+
+            // then
+            assertThat(foundTags).hasSize(1);
+            assertThat(foundTags.getFirst().getName()).isEqualTo("판타지");
         }
     }
 }

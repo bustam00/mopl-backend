@@ -1,21 +1,21 @@
 package com.mopl.batch.sync.es.service.content;
 
-import com.mopl.batch.sync.es.config.properties.EsSyncPolicyResolver;
-import com.mopl.batch.sync.es.config.properties.EsSyncProperties;
+import com.mopl.batch.sync.es.config.EsSyncPolicyResolver;
+import com.mopl.batch.sync.es.config.EsSyncProperties;
 import com.mopl.domain.model.content.ContentModel;
 import com.mopl.domain.support.search.ContentSearchSyncPort;
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
+import com.mopl.logging.context.LogContext;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
-@Slf4j
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
 @Service
-@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "mopl.search", name = "enabled", havingValue = "true")
+@RequiredArgsConstructor
 public class ContentEsSyncService {
 
     private final EsSyncProperties props;
@@ -29,7 +29,7 @@ public class ContentEsSyncService {
         Instant lastCreatedAt = null;
         UUID lastId = null;
 
-        int chunkSize = resolver.chunkSize(props.getContent());
+        int chunkSize = resolver.chunkSize(props.content());
 
         while (true) {
             List<ContentModel> chunk = txService.fetchChunk(lastCreatedAt, lastId, chunkSize);
@@ -45,7 +45,11 @@ public class ContentEsSyncService {
             contentSearchSyncPort.upsertAll(chunk);
 
             totalUpserted += chunk.size();
-            log.info("ES sync progress: upserted={}, lastCreatedAt={}, lastId={}", totalUpserted, lastCreatedAt, lastId);
+            LogContext.with("service", "contentEsSync")
+                .and("upserted", totalUpserted)
+                .and("lastCreatedAt", lastCreatedAt)
+                .and("lastId", lastId)
+                .debug("Sync progress");
         }
 
         return totalUpserted;

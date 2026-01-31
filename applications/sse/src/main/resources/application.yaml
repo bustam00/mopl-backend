@@ -1,5 +1,6 @@
 server:
-  port: 8082
+  # port: 8080
+  port: 8081 # local
   shutdown: graceful
 
 spring:
@@ -12,33 +13,22 @@ spring:
   config:
     import:
       - optional:file:.env[.properties]
+      - actuator.yaml
       - jpa.yaml
-      - security.yaml
+      - logging.yaml
       - redis.yaml
+      - security.yaml
       - storage.yaml
   threads:
     virtual:
       enabled: true
 
-logging:
-  level:
-    root: INFO
+mopl:
+  sse:
+    event-cache:
+      ttl: ${SSE_EVENT_CACHE_TTL:5m}
+      max-size: ${SSE_EVENT_CACHE_MAX_SIZE:100}
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      probes:
-        enabled: true
-  metrics:
-    tags:
-      application: ${spring.application.name}
-      environment: ${SPRING_PROFILES_ACTIVE:local}
-
+# local용 cors 설정
 cors:
-  allowed-origins:
-    - http://localhost:3000
-    - http://localhost:8080
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:8080}

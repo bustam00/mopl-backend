@@ -27,13 +27,13 @@ public class CorsConfig {
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/api/sse/**", configuration);
+        source.registerCorsConfiguration("/sse/**", configuration);
         return source;
     }
 
+    @ConfigurationProperties(prefix = "cors")
     @Getter
     @Setter
-    @ConfigurationProperties(prefix = "cors")
     public static class CorsProperties {
 
         private List<String> allowedOrigins = List.of();

@@ -1,6 +1,10 @@
+server:
+  # port: 8080
+  port: 8084 # local
+
 spring:
   main:
-    web-application-type: none
+    web-application-type: servlet
     keep-alive: true
   application:
     name: mopl-batch
@@ -11,10 +15,12 @@ spring:
   config:
     import:
       - optional:file:.env[.properties]
+      - actuator.yaml
       - jpa.yaml
-      - storage.yaml
+      - logging.yaml
       - openapi.yaml
       - search.yaml
+      - storage.yaml
 
   threads:
     virtual:
@@ -24,56 +30,47 @@ spring:
     job:
       enabled: false
     jdbc:
-      initialize-schema: always
+      initialize-schema: never
 
 mopl:
   batch:
     run-on-startup:
-      enabled: true  # true로 변경하면 시작 시 아래 jobs 실행
+      enabled: ${BATCH_RUN_ON_STARTUP_ENABLED:false}  # true로 변경하면 시작 시 아래 jobs 실행
       jobs:
         - tmdbGenreSyncJob
         - tsdbLeagueSyncJob
         - tmdbCollectJob
         - tsdbLeagueEventCollectJob
-
+    #        - softDeleteCleanupJob
+    #        - orphanCleanupJob
+    #        - orphanStorageCleanupJob
+    #        - denormalizedSyncJob
     cleanup:
-      defaults:
-        chunk-size: ${MOPL_BATCH_CLEANUP_CHUNK_SIZE:500}
-        retention-days: ${MOPL_BATCH_CLEANUP_RETENTION_DAYS:30}
-      storage:
-        chunk-size: ${MOPL_BATCH_CLEANUP_STORAGE_CHUNK_SIZE:200}
+      soft-delete:
+        defaults:
+          chunk-size: ${BATCH_CLEANUP_SOFT_DELETE_CHUNK_SIZE:500}
+          retention-days: ${BATCH_CLEANUP_SOFT_DELETE_GRACE_PERIOD_DAYS:30}
+        storage:
+          chunk-size: ${BATCH_CLEANUP_SOFT_DELETE_STORAGE_CHUNK_SIZE:200}
       orphan:
         defaults:
-          chunk-size: ${MOPL_BATCH_CLEANUP_ORPHAN_CHUNK_SIZE:500}
-          grace-period-days: ${MOPL_BATCH_CLEANUP_ORPHAN_GRACE_PERIOD_DAYS:1}
-
+          chunk-size: ${BATCH_CLEANUP_ORPHAN_CHUNK_SIZE:500}
+          grace-period-days: ${BATCH_CLEANUP_ORPHAN_GRACE_PERIOD_DAYS:1}
+      orphan-storage:
+        defaults:
+          chunk-size: ${BATCH_CLEANUP_ORPHAN_STORAGE_CHUNK_SIZE:100}
     collect:
       tmdb:
         defaults:
-          max-page: ${MOPL_BATCH_COLLECT_TMDB_MAX_PAGE:20}
+          max-page: ${BATCH_COLLECT_TMDB_MAX_PAGE:20}
       tsdb:
         defaults:
-          sleep-ms: ${MOPL_BATCH_COLLECT_TSDB_SLEEP_MS:300}
-
+          sleep-ms: ${BATCH_COLLECT_TSDB_SLEEP_MS:300}
     sync:
       es:
-        initial-enabled: ${MOPL_BATCH_SYNC_ES_INITIAL_ENABLED:true}
+        initial-enabled: ${BATCH_SYNC_ES_INITIAL_ENABLED:false}
         defaults:
-          chunk-size: ${MOPL_BATCH_SYNC_ES_CHUNK_SIZE:500}
+          chunk-size: ${BATCH_SYNC_ES_CHUNK_SIZE:500}
       denormalized:
-        default-policy:
-          batch-size: ${MOPL_BATCH_SYNC_DENORMALIZED_BATCH_SIZE:500}
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      probes:
-        enabled: true
-  metrics:
-    tags:
-      application: ${spring.application.name}
-      environment: ${SPRING_PROFILES_ACTIVE:local}
+        defaults:
+          chunk-size: ${BATCH_SYNC_DENORMALIZED_CHUNK_SIZE:100}

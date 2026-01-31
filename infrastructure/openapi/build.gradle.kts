@@ -3,6 +3,10 @@ plugins {
 }
 
 dependencies {
+    // project modules
+    implementation(project(":shared:logging"))
+    // JSR-305 annotations (for OpenAPI generated code)
+    implementation("com.google.code.findbugs:jsr305:3.0.2")
     // WebClient
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     // Retry
@@ -10,4 +14,6 @@ dependencies {
     // AWS S3 SDK
     implementation(platform("software.amazon.awssdk:bom:${property("awsS3SdkVersion")}"))
     implementation("software.amazon.awssdk:s3")
+    // metrics
+    implementation("io.micrometer:micrometer-core")
 }

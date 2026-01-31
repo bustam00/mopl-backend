@@ -8,6 +8,7 @@ import com.mopl.jpa.config.JpaConfig;
 import com.mopl.jpa.entity.notification.NotificationEntityMapper;
 import com.mopl.jpa.entity.user.UserEntityMapper;
 import com.mopl.jpa.repository.user.UserRepositoryImpl;
+import com.mopl.jpa.support.batch.JdbcBatchInsertHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -28,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
     NotificationRepositoryImpl.class,
     NotificationEntityMapper.class,
     UserRepositoryImpl.class,
-    UserEntityMapper.class
+    UserEntityMapper.class,
+    JdbcBatchInsertHelper.class
 })
 @DisplayName("NotificationRepositoryImpl 슬라이스 테스트")
 class NotificationRepositoryImplTest {
@@ -261,6 +263,16 @@ class NotificationRepositoryImplTest {
 
             // when
             List<NotificationModel> savedNotifications = notificationRepository.saveAll(emptyList);
+
+            // then
+            assertThat(savedNotifications).isEmpty();
+        }
+
+        @Test
+        @DisplayName("null 목록을 저장하면 빈 목록을 반환한다")
+        void withNullList_returnsEmptyList() {
+            // when
+            List<NotificationModel> savedNotifications = notificationRepository.saveAll(null);
 
             // then
             assertThat(savedNotifications).isEmpty();

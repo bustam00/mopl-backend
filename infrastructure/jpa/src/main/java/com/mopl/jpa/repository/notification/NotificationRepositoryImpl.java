@@ -1,12 +1,18 @@
 package com.mopl.jpa.repository.notification;
 
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import com.mopl.domain.model.notification.NotificationModel;
 import com.mopl.domain.repository.notification.NotificationRepository;
 import com.mopl.jpa.entity.notification.NotificationEntity;
 import com.mopl.jpa.entity.notification.NotificationEntityMapper;
+import com.mopl.jpa.support.UuidBinaryConverter;
+import com.mopl.jpa.support.batch.JdbcBatchInsertHelper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,8 +21,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationRepositoryImpl implements NotificationRepository {
 
+    private static final TimeBasedEpochGenerator UUID_GENERATOR = Generators.timeBasedEpochGenerator();
+
+    private static final String BATCH_INSERT_SQL = """
+        INSERT INTO notifications (id, title, content, level, receiver_id, created_at)
+        VALUES (:id, :title, :content, :level, :receiverId, :createdAt)
+        """;
+
     private final JpaNotificationRepository jpaNotificationRepository;
     private final NotificationEntityMapper notificationEntityMapper;
+    private final JdbcBatchInsertHelper jdbcBatchInsertHelper;
 
     @Override
     public Optional<NotificationModel> findById(UUID notificationId) {
@@ -33,13 +47,35 @@ public class NotificationRepositoryImpl implements NotificationRepository {
 
     @Override
     public List<NotificationModel> saveAll(List<NotificationModel> notifications) {
-        List<NotificationEntity> entities = notifications.stream()
-            .map(notificationEntityMapper::toEntity)
+        if (notifications == null || notifications.isEmpty()) {
+            return List.of();
+        }
+
+        Instant now = Instant.now();
+        List<NotificationModel> notificationsWithId = notifications.stream()
+            .map(n -> (NotificationModel) n.toBuilder()
+                .id(UUID_GENERATOR.generate())
+                .createdAt(now)
+                .build())
             .toList();
-        List<NotificationEntity> savedEntities = jpaNotificationRepository.saveAll(entities);
-        return savedEntities.stream()
-            .map(notificationEntityMapper::toModel)
-            .toList();
+
+        jdbcBatchInsertHelper.batchInsert(
+            BATCH_INSERT_SQL,
+            notificationsWithId,
+            this::toParameterSource
+        );
+
+        return notificationsWithId;
+    }
+
+    private MapSqlParameterSource toParameterSource(NotificationModel notification) {
+        return new MapSqlParameterSource()
+            .addValue("id", UuidBinaryConverter.toBytes(notification.getId()))
+            .addValue("title", notification.getTitle())
+            .addValue("content", notification.getContent())
+            .addValue("level", notification.getLevel().name())
+            .addValue("receiverId", UuidBinaryConverter.toBytes(notification.getReceiverId()))
+            .addValue("createdAt", notification.getCreatedAt());
     }
 
     @Override

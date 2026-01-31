@@ -38,9 +38,10 @@ class TwoLevelCacheManagerTest {
             "mopl:",
             new L1Config(10000, Duration.ofSeconds(30), true),
             new L2Config(Duration.ofMinutes(10)),
-            false
+            false,
+            null
         );
-        cacheManager = new TwoLevelCacheManager(l1Cache, redisTemplate, properties);
+        cacheManager = new TwoLevelCacheManager(l1Cache, redisTemplate, properties, null);
     }
 
     @Nested
@@ -126,7 +127,7 @@ class TwoLevelCacheManagerTest {
 
         @BeforeEach
         void setUp() {
-            cacheManager = new TwoLevelCacheManager(l1Cache, null, properties);
+            cacheManager = new TwoLevelCacheManager(l1Cache, null, properties, null);
         }
 
         @Test

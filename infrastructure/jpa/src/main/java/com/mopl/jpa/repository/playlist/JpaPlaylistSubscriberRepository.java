@@ -2,7 +2,6 @@ package com.mopl.jpa.repository.playlist;
 
 import com.mopl.jpa.entity.playlist.PlaylistSubscriberEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
@@ -34,24 +33,4 @@ public interface JpaPlaylistSubscriberRepository extends
     boolean existsByPlaylistIdAndSubscriberId(UUID playlistId, UUID subscriberId);
 
     int deleteByPlaylistIdAndSubscriberId(UUID playlistId, UUID subscriberId);
-
-    // denormalized sync batch 전용
-    @Query("SELECT DISTINCT ps.playlist.id FROM PlaylistSubscriberEntity ps")
-    Set<UUID> findAllPlaylistIds();
-
-    @Query("""
-        SELECT COUNT(ps)
-        FROM PlaylistSubscriberEntity ps
-        JOIN ps.subscriber
-        WHERE ps.playlist.id = :playlistId
-        """)
-    int countByPlaylistId(UUID playlistId);
-
-    // cleanup batch 전용
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            delete from PlaylistSubscriberEntity ps
-            where ps.playlist.id in :playlistIds
-        """)
-    int deleteAllByPlaylistIds(List<UUID> playlistIds);
 }

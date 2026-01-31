@@ -1,5 +1,6 @@
 server:
-  port: 8081
+  # port: 8080
+  port: 8082 # local
   shutdown: graceful
 
 websocket:
@@ -16,24 +17,12 @@ spring:
   config:
     import:
       - optional:file:.env[.properties]
+      - actuator.yaml
       - jpa.yaml
+      - logging.yaml
       - redis.yaml
       - security.yaml
       - storage.yaml
   threads:
     virtual:
       enabled: true
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      probes:
-        enabled: true
-  metrics:
-    tags:
-      application: ${spring.application.name}
-      environment: ${SPRING_PROFILES_ACTIVE:local}

@@ -5,9 +5,25 @@ mopl:
       root-path: ${STORAGE_LOCAL_ROOT_PATH:.mopl/storage}
       base-url: ${STORAGE_LOCAL_BASE_URL:http://localhost:8080}
     s3:
-      access-key: ${AWS_S3_ACCESS_KEY:}
-      secret-key: ${AWS_S3_SECRET_KEY:}
-      region: ${AWS_S3_REGION:ap-northeast-2}
-      bucket: ${AWS_S3_BUCKET:}
-      presigned-url-expiration: ${AWS_S3_PRESIGNED_URL_EXPIRATION:1h}
-      endpoint: ${AWS_S3_ENDPOINT:}
+      access-key: ${STORAGE_S3_ACCESS_KEY:}
+      secret-key: ${STORAGE_S3_SECRET_KEY:}
+      region: ${STORAGE_S3_REGION:ap-northeast-2}
+      bucket: ${STORAGE_S3_BUCKET:}
+      presigned-url-expiration: ${STORAGE_S3_PRESIGNED_URL_EXPIRATION:24h}
+      endpoint: ${STORAGE_S3_ENDPOINT:}
+
+---
+# =============================================================================
+# Test Profile
+# =============================================================================
+# 테스트에서는 로컬 스토리지를 사용하고, build 디렉토리 내에 저장합니다.
+# 테스트 완료 후 자동으로 정리됩니다.
+# =============================================================================
+spring.config.activate.on-profile: test
+
+mopl:
+  storage:
+    type: local
+    local:
+      root-path: build/test-storage
+      base-url: http://localhost:8080

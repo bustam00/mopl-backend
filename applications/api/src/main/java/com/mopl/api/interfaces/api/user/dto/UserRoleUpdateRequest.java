@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 @Schema(
+    description = "사용자 역할 수정 요청",
     example = """
         {
           "role": "ADMIN"
@@ -12,6 +13,6 @@ import jakarta.validation.constraints.NotNull;
         """
 )
 public record UserRoleUpdateRequest(
-    @NotNull UserModel.Role role
+    @Schema(description = "역할", example = "ADMIN") @NotNull UserModel.Role role
 ) {
 }

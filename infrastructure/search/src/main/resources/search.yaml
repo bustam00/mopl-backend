@@ -1,11 +1,29 @@
 mopl:
   search:
-    enabled: ${MOPL_SEARCH_ENABLED:true}
+    enabled: ${SEARCH_ENABLED:true}
     index:
-      recreate-on-startup: ${MOPL_SEARCH_INDEX_RECREATE_ON_STARTUP:true}
+      recreate-on-startup: ${SEARCH_INDEX_RECREATE_ON_STARTUP:false}
     elasticsearch:
-      uris: ${MOPL_SEARCH_ELASTICSEARCH_URIS:localhost:9200}
-      username: ${MOPL_SEARCH_ELASTICSEARCH_USERNAME:}
-      password: ${MOPL_SEARCH_ELASTICSEARCH_PASSWORD:}
-      connect-timeout-millis: ${MOPL_SEARCH_ELASTICSEARCH_CONNECT_TIMEOUT:1000}
-      socket-timeout-millis: ${MOPL_SEARCH_ELASTICSEARCH_SOCKET_TIMEOUT:3000}
+      uris: ${SEARCH_ELASTICSEARCH_URIS:http://localhost:9200}
+      username: ${SEARCH_ELASTICSEARCH_USERNAME:}
+      password: ${SEARCH_ELASTICSEARCH_PASSWORD:}
+      connect-timeout-millis: ${SEARCH_ELASTICSEARCH_CONNECT_TIMEOUT:1000}
+      socket-timeout-millis: ${SEARCH_ELASTICSEARCH_SOCKET_TIMEOUT:3000}
+
+---
+# =============================================================================
+# Test Profile - Testcontainers 기반
+# =============================================================================
+# Testcontainers가 Elasticsearch 컨테이너를 자동으로 시작하고 연결 정보를 주입합니다.
+# spring.elasticsearch.uris는 ElasticsearchContainerConfig에서 동적으로 설정합니다.
+# =============================================================================
+spring.config.activate.on-profile: test
+
+mopl:
+  search:
+    enabled: false
+    index:
+      recreate-on-startup: true
+    elasticsearch:
+      connect-timeout-millis: 5000
+      socket-timeout-millis: 10000

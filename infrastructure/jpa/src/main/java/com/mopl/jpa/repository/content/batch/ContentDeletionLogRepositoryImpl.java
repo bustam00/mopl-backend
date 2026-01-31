@@ -1,27 +1,37 @@
 package com.mopl.jpa.repository.content.batch;
 
-import com.mopl.domain.repository.content.batch.ContentDeletionLogRepository;
+import com.fasterxml.uuid.Generators;
+import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
 import com.mopl.domain.repository.content.batch.ContentDeletionLogItem;
-import com.mopl.jpa.entity.content.ContentDeletionLogEntity;
+import com.mopl.domain.repository.content.batch.ContentDeletionLogRepository;
+import com.mopl.jpa.support.UuidBinaryConverter;
+import com.mopl.jpa.support.batch.JdbcBatchInsertHelper;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.stereotype.Repository;
+
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
 public class ContentDeletionLogRepositoryImpl implements ContentDeletionLogRepository {
 
+    private static final TimeBasedEpochGenerator UUID_GENERATOR = Generators.timeBasedEpochGenerator();
+
+    private static final String BATCH_INSERT_SQL = """
+        INSERT INTO content_deletion_logs (id, content_id, thumbnail_path, created_at)
+        VALUES (:id, :contentId, :thumbnailPath, :createdAt)
+        """;
+
     private final JpaContentDeletionLogRepository jpaContentDeletionLogRepository;
+    private final JdbcBatchInsertHelper jdbcBatchInsertHelper;
 
     @Override
     public int saveAll(Map<UUID, String> thumbnailPathsByContentId) {
@@ -29,50 +39,48 @@ public class ContentDeletionLogRepositoryImpl implements ContentDeletionLogRepos
             return 0;
         }
 
-        List<UUID> contentIds = new ArrayList<>(thumbnailPathsByContentId.keySet());
-        List<UUID> existingIds = jpaContentDeletionLogRepository.findExistingContentIds(contentIds);
-        Set<UUID> existingIdSet = new HashSet<>(existingIds);
+        List<UUID> contentIds = thumbnailPathsByContentId.keySet().stream().toList();
+        Set<UUID> existingIdSet = new HashSet<>(
+            jpaContentDeletionLogRepository.findExistingContentIds(contentIds)
+        );
 
-        List<ContentDeletionLogEntity> entities = new ArrayList<>();
+        List<UUID> newContentIds = contentIds.stream()
+            .filter(contentId -> !existingIdSet.contains(contentId))
+            .toList();
 
-        for (UUID contentId : contentIds) {
-            if (existingIdSet.contains(contentId)) {
-                continue;
-            }
-
-            String thumbnailPath = thumbnailPathsByContentId.get(contentId);
-
-            ContentDeletionLogEntity entity = ContentDeletionLogEntity.builder()
-                .contentId(contentId)
-                .thumbnailPath(thumbnailPath)
-                .build();
-
-            entities.add(entity);
-        }
-
-        if (entities.isEmpty()) {
+        if (newContentIds.isEmpty()) {
             return 0;
         }
 
-        jpaContentDeletionLogRepository.saveAll(entities);
-        return entities.size();
+        Instant now = Instant.now();
+        jdbcBatchInsertHelper.batchInsert(
+            BATCH_INSERT_SQL,
+            newContentIds,
+            contentId -> toParameterSource(contentId, thumbnailPathsByContentId.get(contentId), now)
+        );
+
+        return newContentIds.size();
+    }
+
+    private MapSqlParameterSource toParameterSource(UUID contentId, String thumbnailPath, Instant createdAt) {
+        return new MapSqlParameterSource()
+            .addValue("id", UuidBinaryConverter.toBytes(UUID_GENERATOR.generate()))
+            .addValue("contentId", UuidBinaryConverter.toBytes(contentId))
+            .addValue("thumbnailPath", thumbnailPath)
+            .addValue("createdAt", createdAt);
     }
 
     @Override
     public List<ContentDeletionLogItem> findImageCleanupTargets(int limit) {
-        Pageable pageable = PageRequest.of(
-            0,
-            limit,
-            Sort.by(Sort.Direction.ASC, "deletedAt")
-        );
-
-        return jpaContentDeletionLogRepository.findImageCleanupTargets(pageable).stream()
+        return jpaContentDeletionLogRepository.findImageCleanupTargets(
+            PageRequest.of(0, limit, Sort.by(Sort.Direction.ASC, "deletedAt"))
+        ).stream()
             .map(row -> new ContentDeletionLogItem(
                 row.getLogId(),
                 row.getContentId(),
                 row.getThumbnailPath()
             ))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     @Override
@@ -85,13 +93,9 @@ public class ContentDeletionLogRepositoryImpl implements ContentDeletionLogRepos
 
     @Override
     public List<UUID> findFullyProcessedLogIds(int limit) {
-        Pageable pageable = PageRequest.of(
-            0,
-            limit,
-            Sort.by(Sort.Direction.ASC, "deletedAt")
+        return jpaContentDeletionLogRepository.findFullyProcessedLogIds(
+            PageRequest.of(0, limit, Sort.by(Sort.Direction.ASC, "deletedAt"))
         );
-
-        return jpaContentDeletionLogRepository.findFullyProcessedLogIds(pageable);
     }
 
     @Override

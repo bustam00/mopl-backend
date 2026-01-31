@@ -12,6 +12,7 @@ import com.mopl.dto.follow.FollowResponse;
 import com.mopl.dto.follow.FollowResponseMapper;
 import com.mopl.dto.follow.FollowStatusResponse;
 import com.mopl.dto.outbox.DomainEventOutboxMapper;
+import com.mopl.logging.context.LogContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -43,6 +44,12 @@ public class FollowFacade {
         return transactionTemplate.execute(status -> {
             FollowModel saved = followService.create(followModel);
             outboxService.save(domainEventOutboxMapper.toOutboxModel(event));
+
+            LogContext.with("followId", saved.getId())
+                .and("followerId", followerId)
+                .and("followeeId", followeeId)
+                .info("User followed");
+
             return followResponseMapper.toResponse(saved);
         });
     }
@@ -64,18 +71,17 @@ public class FollowFacade {
         transactionTemplate.executeWithoutResult(status -> {
             followService.delete(follow);
             outboxService.save(domainEventOutboxMapper.toOutboxModel(event));
+
+            LogContext.with("followId", followId)
+                .and("followerId", userId)
+                .and("followeeId", follow.getFolloweeId())
+                .info("User unfollowed");
         });
     }
 
     public long getFollowerCount(UUID followeeId) {
         userService.getById(followeeId);
         return followService.getFollowerCount(followeeId);
-    }
-
-    public boolean isFollow(UUID followerId, UUID followeeId) {
-        userService.getById(followerId);
-        userService.getById(followeeId);
-        return followService.isFollow(followerId, followeeId);
     }
 
     public FollowStatusResponse getFollowStatus(UUID followerId, UUID followeeId) {
